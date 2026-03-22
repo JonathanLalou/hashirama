@@ -2,18 +2,62 @@
 <html>
 <head>
     <style>
-        body { width: 280px; padding: 15px; font-family: system-ui; text-align: center; }
-        button { width: 100%; padding: 14px; margin: 8px 0; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; }
-        #start { background: #e63939; color: white; }
-        #stop  { background: #1a1a1a; color: white; }
-        #status { margin-top: 10px; font-weight: bold; }
+        body {
+          width: 300px;
+          padding: 15px;
+          font-family: system-ui, sans-serif;
+          text-align: center;
+          background: #111;
+          color: #eee;
+        }
+        h3 {
+          margin: 0 0 12px;
+          color: #9f9;
+        }
+        button {
+          width: 100%;
+          padding: 14px;
+          margin: 8px 0;
+          font-size: 16px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        #start {
+          background: #e63939;
+          color: white;
+        }
+        #start:hover { background: #c62828; }
+        #stop {
+          background: #1a1a1a;
+          color: white;
+        }
+        #stop:hover { background: #333; }
+        #status {
+          margin: 12px 0 8px;
+          font-weight: bold;
+          font-size: 1.1em;
+        }
+        #counter {
+          font-size: 1.4em;
+          font-weight: bold;
+          color: #4fc3f7;
+          margin: 6px 0;
+        }
+        .inactive  { color: #999; }
+        .active    { color: #4caf50; }
+        .finished  { color: #ffca28; }
     </style>
 </head>
 <body>
-<h3>Auto Image Saver</h3>
+<h3>hashirama</h3>
+
 <button id="start">🔴 Start Saving</button>
 <button id="stop">⬛ Stop Saving</button>
-<div id="status">Ready</div>
+
+<div id="status" class="inactive">No session active</div>
+<div id="counter">Saved: 0</div>
 
 <script src="popup.js"></script>
 </body>
