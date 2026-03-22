@@ -4,7 +4,7 @@
   "version": "1.0",
   "description": "Auto-save every image with sequential numbers",
   "icons": {
-    "128": "icon.png"
+    "128": "hashirama.png"
   },
   "action": {
     "default_popup": "popup.html"
