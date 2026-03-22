@@ -1,5 +1,6 @@
 const startBtn = document.getElementById('start');
 const stopBtn  = document.getElementById('stop');
+const prefixInput = document.getElementById('prefix');
 const statusEl = document.getElementById('status');
 const counterEl = document.getElementById('counter');
 
@@ -24,7 +25,13 @@ startBtn.onclick = async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
 
-  await chrome.tabs.sendMessage(tab.id, { action: "start" });
+  const prefix = prefixInput.value.trim();
+
+  await chrome.tabs.sendMessage(tab.id, {
+    action: "start",
+    prefix: prefix
+  });
+
   isSaving = true;
   updateUI(0, true, false);
 };
@@ -35,16 +42,16 @@ stopBtn.onclick = async () => {
 
   await chrome.tabs.sendMessage(tab.id, { action: "stop" });
   isSaving = false;
-  updateUI(0, false, true); // show finished briefly
-  setTimeout(() => updateUI(0, false, false), 3000); // then back to inactive
+  updateUI(0, false, true);
+  setTimeout(() => updateUI(0, false, false), 3000);
 };
 
-// Listen for real-time updates from content script
+// Listen for real-time counter updates
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "updateCounter") {
     updateUI(msg.saved, !msg.stopped, msg.stopped);
   }
 });
 
-// Initialize UI on popup open
+// Initialize UI
 updateUI(0, false, false);

@@ -3,7 +3,7 @@
 <head>
     <style>
         body {
-          width: 300px;
+          width: 320px;
           padding: 15px;
           font-family: system-ui, sans-serif;
           text-align: center;
@@ -24,15 +24,9 @@
           cursor: pointer;
           transition: all 0.2s;
         }
-        #start {
-          background: #e63939;
-          color: white;
-        }
+        #start { background: #e63939; color: white; }
         #start:hover { background: #c62828; }
-        #stop {
-          background: #1a1a1a;
-          color: white;
-        }
+        #stop  { background: #1a1a1a; color: white; }
         #stop:hover { background: #333; }
         #status {
           margin: 12px 0 8px;
@@ -43,7 +37,22 @@
           font-size: 1.4em;
           font-weight: bold;
           color: #4fc3f7;
-          margin: 6px 0;
+          margin: 6px 0 12px;
+        }
+        label {
+          display: block;
+          margin: 12px 0 4px;
+          font-size: 0.95em;
+          color: #ccc;
+        }
+        input[type="text"] {
+          width: 100%;
+          padding: 8px;
+          font-size: 14px;
+          border-radius: 4px;
+          border: 1px solid #444;
+          background: #222;
+          color: #eee;
         }
         .inactive  { color: #999; }
         .active    { color: #4caf50; }
@@ -52,6 +61,9 @@
 </head>
 <body>
 <h3>hashirama</h3>
+
+<label for="prefix">Filename prefix (optional):</label>
+<input type="text" id="prefix" placeholder="e.g. ABCD_" />
 
 <button id="start">🔴 Start Saving</button>
 <button id="stop">⬛ Stop Saving</button>

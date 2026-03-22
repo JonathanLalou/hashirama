@@ -1,4 +1,4 @@
-// content.js – FINAL version: use base64 data: URLs to beat revocation
+// content.js – with FIXED prefix support
 
 let isSaving = false;
 let counter = 1;
@@ -7,6 +7,7 @@ let scrollInterval = null;
 let savedHttp = 0;
 let savedBlob = 0;
 let totalImagesDetected = 0;
+let currentPrefix = '';  // ← this will hold the prefix from popup
 
 // Helpers
 function pad(num) {
@@ -17,7 +18,7 @@ function sanitizeFilename(name) {
   return name.replace(/[<>:"\/\\|?*]/g, '_');
 }
 
-// Main download function – now tries base64 for blobs
+// Download logic – now uses currentPrefix if set
 async function downloadImage(src) {
   if (downloaded.has(src)) {
     console.log(`[ImageSaver] Skip (already): ${src.slice(0,80)}...`);
@@ -32,28 +33,26 @@ async function downloadImage(src) {
   let downloadUrl = src;
   let ext = 'webp';
 
-  console.log(`[ImageSaver] Processing #${counter} – ${isBlob ? 'BLOB' : 'HTTP'}: ${src.slice(0,100)}...`);
-
   if (isBlob) {
     try {
       const response = await fetch(src);
       if (!response.ok) throw new Error(`Blob fetch failed: ${response.status}`);
-
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
       const base64 = btoa(
         new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
-
       downloadUrl = `data:${blob.type || 'image/webp'};base64,${base64}`;
-      console.log(`[ImageSaver] Converted blob → data: URL (length: ${base64.length} chars)`);
+      console.log(`[ImageSaver] Blob → data: URL (base64 length: ${base64.length})`);
     } catch (err) {
-      console.error(`[ImageSaver] Blob → base64 failed:`, err);
-      return; // skip if conversion fails
+      console.error(`[ImageSaver] Blob conversion failed:`, err);
+      return;
     }
   }
 
-  const filename = sanitizeFilename(`${pad(counter)}.${ext}`);
+  // Use prefix if set (from popup message)
+  const prefixPart = currentPrefix ? `${sanitizeFilename(currentPrefix)}_` : '';
+  const filename = sanitizeFilename(`${prefixPart}${pad(counter)}.${ext}`);
 
   console.log(`[ImageSaver] QUEUING: ${filename} from ${downloadUrl.slice(0,60)}...`);
 
@@ -65,7 +64,7 @@ async function downloadImage(src) {
     if (chrome.runtime.lastError) {
       console.error(`[ImageSaver] Message failed: ${chrome.runtime.lastError.message}`);
     } else if (response?.error) {
-      console.error(`[ImageSaver] Download API error: ${response.error}`);
+      console.error(`[ImageSaver] Download error: ${response.error}`);
     } else {
       console.log(`[ImageSaver] Queued OK → ${filename}`);
     }
@@ -73,7 +72,6 @@ async function downloadImage(src) {
 
   counter++;
 
-  // Update popup counter
   chrome.runtime.sendMessage({
     action: "updateCounter",
     saved: downloaded.size,
@@ -81,14 +79,13 @@ async function downloadImage(src) {
   });
 }
 
-// Fetch interceptor (still useful as fallback/early capture)
+// Fetch interceptor (unchanged)
 const originalFetch = window.fetch;
 window.fetch = async function(...args) {
-  const url = args[0];
   const response = await originalFetch.apply(this, args);
 
-  if (isSaving && typeof url === 'string' && url.includes('/get-image?data=')) {
-    console.log(`[ImageSaver] ★ Caught real fetch: ${url.slice(0,80)}...`);
+  if (isSaving && typeof args[0] === 'string' && args[0].includes('/get-image?data=')) {
+    console.log(`[ImageSaver] ★ Caught real fetch: ${args[0].slice(0,80)}...`);
 
     try {
       const blob = await response.clone().blob();
@@ -98,7 +95,8 @@ window.fetch = async function(...args) {
       );
 
       const dataUrl = `data:${blob.type || 'image/webp'};base64,${base64}`;
-      const filename = `${pad(counter)}.webp`;
+      const prefixPart = currentPrefix ? `${sanitizeFilename(currentPrefix)}_` : '';
+      const filename = `${prefixPart}${pad(counter)}.webp`;
 
       chrome.runtime.sendMessage({
         action: "download",
@@ -106,7 +104,7 @@ window.fetch = async function(...args) {
         filename: filename
       });
 
-      downloaded.add(url);
+      downloaded.add(args[0]);
       counter++;
       savedHttp++;
 
@@ -119,7 +117,7 @@ window.fetch = async function(...args) {
   return response;
 };
 
-// Scanning & monitoring functions (unchanged but included for completeness)
+// Scanning & monitoring (unchanged)
 function scanAllImages() {
   document.querySelectorAll('img').forEach(img => {
     if (img.src) downloadImage(img.src);
@@ -173,10 +171,17 @@ function stopMonitoring() {
   });
 }
 
+// Message listener – now properly stores prefix
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.action === "start") startMonitoring();
-  if (msg.action === "stop") stopMonitoring();
+  if (msg.action === "start") {
+    currentPrefix = msg.prefix || '';  // store the prefix sent from popup
+    console.log(`[ImageSaver] Session started with prefix: "${currentPrefix}"`);
+    startMonitoring();
+  }
+  if (msg.action === "stop") {
+    stopMonitoring();
+  }
 });
 
-// Initial scans
+// Initial scan (runs on every page load)
 scanAllImages();
